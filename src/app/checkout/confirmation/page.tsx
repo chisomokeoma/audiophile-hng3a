@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import AppHeader from "@/components/AppHeader";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ interface Order {
   createdAt: number;
 }
 
-export default function ConfirmationPage() {
+function ConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get("orderId");
   const [order, setOrder] = useState<Order | null>(null);
@@ -236,5 +236,22 @@ export default function ConfirmationPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ConfirmationPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="w-full bg-offwhite min-h-screen">
+          <AppHeader />
+          <div className="container py-20">
+            <p className="text-center">Loading order details...</p>
+          </div>
+        </main>
+      }
+    >
+      <ConfirmationContent />
+    </Suspense>
   );
 }
