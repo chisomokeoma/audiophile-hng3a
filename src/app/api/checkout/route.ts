@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../convex/_generated/api";
+
+let api: any;
+try {
+  api = require("../../../convex/_generated/api").api;
+} catch (error) {
+  console.warn(
+    "Convex API not generated yet. Run 'npx convex dev' to generate it."
+  );
+  api = null;
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -86,14 +95,16 @@ export async function POST(request: NextRequest) {
     };
 
     const convex = getConvexClient();
-    if (convex) {
+    if (convex && api) {
       try {
         await convex.mutation(api.orders.createOrder, orderData);
       } catch (convexError) {
         console.error("Convex error:", convexError);
       }
     } else {
-      console.warn("Convex client not available. Order not saved to database.");
+      console.warn(
+        "Convex not configured. Order not saved to database. Run 'npx convex dev' to set up Convex."
+      );
     }
 
     let emailData = null;
@@ -111,7 +122,7 @@ export async function POST(request: NextRequest) {
 
       if (emailError) {
         console.error("Email error:", emailError);
-      } else if (emailData && convex) {
+      } else if (emailData && convex && api) {
         try {
           await convex.mutation(api.orders.markEmailSent, { orderId });
         } catch (markError) {

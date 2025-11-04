@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../convex/_generated/api";
+
+let api: any;
+try {
+  api = require("../../../../convex/_generated/api").api;
+} catch (error) {
+  console.warn(
+    "Convex API not generated yet. Run 'npx convex dev' to generate it."
+  );
+  api = null;
+}
 
 function getConvexClient() {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -30,9 +39,12 @@ export async function GET(
     }
 
     const convex = getConvexClient();
-    if (!convex) {
+    if (!convex || !api) {
       return NextResponse.json(
-        { error: "Database service not available" },
+        {
+          error:
+            "Database service not available. Run 'npx convex dev' to set up Convex.",
+        },
         { status: 503 }
       );
     }
