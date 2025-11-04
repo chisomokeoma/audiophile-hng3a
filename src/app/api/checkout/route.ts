@@ -12,7 +12,18 @@ try {
   api = null;
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey || apiKey.trim() === "") {
+    return null;
+  }
+  try {
+    return new Resend(apiKey);
+  } catch (error) {
+    console.error("Failed to create Resend client:", error);
+    return null;
+  }
+}
 
 function getConvexClient() {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -110,25 +121,37 @@ export async function POST(request: NextRequest) {
     let emailData = null;
     let emailError = null;
 
-    if (resend && process.env.RESEND_API_KEY) {
-      const emailResult = await resend.emails.send({
-        from: "Audiophile <onboarding@resend.dev>",
-        to: email,
-        subject: `Order Confirmation - ${orderId}`,
-        html: generateEmailTemplate(orderData),
-      });
-      emailData = emailResult.data;
-      emailError = emailResult.error;
+    const resend = getResendClient();
+    if (resend) {
+      try {
+        const emailResult = await resend.emails.send({
+          from: "Audiophile <onboarding@resend.dev>",
+          to: email,
+          subject: `Order Confirmation - ${orderId}`,
+          html: generateEmailTemplate(orderData),
+        });
+        emailData = emailResult.data;
+        emailError = emailResult.error;
 
-      if (emailError) {
-        console.error("Email error:", emailError);
-      } else if (emailData && convex && api) {
-        try {
-          await convex.mutation(api.orders.markEmailSent, { orderId });
-        } catch (markError) {
-          console.error("Error marking email as sent:", markError);
+        if (emailError) {
+          console.error("Email error:", emailError);
+        } else if (emailData && convex && api) {
+          try {
+            await convex.mutation(api.orders.markEmailSent, { orderId });
+          } catch (markError) {
+            console.error("Error marking email as sent:", markError);
+          }
         }
+      } catch (emailSendError) {
+        console.error("Failed to send email:", emailSendError);
+        console.warn(
+          "Resend not configured. Emails will not be sent. Set RESEND_API_KEY in .env.local"
+        );
       }
+    } else {
+      console.warn(
+        "Resend API key not set. Emails will not be sent. Set RESEND_API_KEY in .env.local"
+      );
     }
 
     return NextResponse.json({
