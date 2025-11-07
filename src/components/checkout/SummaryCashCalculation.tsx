@@ -16,45 +16,43 @@ function SummaryCashCalculation({ total }: SummaryCashCalculationProps) {
   };
 
   return (
-    <div className="font-manrope mt-8">
-      <div className="">
-        <div className="flex flex-col gap-2">
-          <p className="flex justify-between">
-            <span className="inline-block text-[0.9375rem]/[166.667%] text-black/50 uppercase">
-              TOTAL
-            </span>
-            <span className="inline-block text-[1.125rem]/[100%] uppercase font-bold">
-              {formatCurrency(total)}
-            </span>
-          </p>
-
-          <p className="flex justify-between">
-            <span className="inline-block text-[0.9375rem]/[166.667%] text-black/50 uppercase">
-              SHIPPING
-            </span>
-            <span className="inline-block text-[1.125rem]/[100%] uppercase font-bold">
-              {formatCurrency(shipping)}
-            </span>
-          </p>
-
-          <p className="flex justify-between">
-            <span className="inline-block text-[0.9375rem]/[166.667%] text-black/50 uppercase">
-              VAT (INCLUDED)
-            </span>
-            <span className="inline-block text-[1.125rem]/[100%] uppercase font-bold">
-              {formatCurrency(vat)}
-            </span>
-          </p>
+    <div className="font-manrope">
+      <div className="flex flex-col gap-2">
+        <div className="flex justify-between items-center">
+          <span className="text-[0.9375rem]/[166.667%] text-black/50 uppercase">
+            TOTAL
+          </span>
+          <span className="text-[1.125rem]/[100%] font-bold uppercase">
+            {formatCurrency(total)}
+          </span>
         </div>
-        <div className="mt-6 mb-8">
-          <p className="flex justify-between">
-            <span className="inline-block text-[0.9375rem]/[166.667%] text-black/50 uppercase">
-              GRAND TOTAL
-            </span>
-            <span className="inline-block text-[1.125rem]/[100%] text-orange font-bold uppercase">
-              {formatCurrency(grandTotal)}
-            </span>
-          </p>
+
+        <div className="flex justify-between items-center">
+          <span className="text-[0.9375rem]/[166.667%] text-black/50 uppercase">
+            SHIPPING
+          </span>
+          <span className="text-[1.125rem]/[100%] font-bold uppercase">
+            {formatCurrency(shipping)}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span className="text-[0.9375rem]/[166.667%] text-black/50 uppercase">
+            VAT (INCLUDED)
+          </span>
+          <span className="text-[1.125rem]/[100%] font-bold uppercase">
+            {formatCurrency(vat)}
+          </span>
+        </div>
+      </div>
+      <div className="mt-6">
+        <div className="flex justify-between items-center">
+          <span className="text-[0.9375rem]/[166.667%] text-black/50 uppercase">
+            GRAND TOTAL
+          </span>
+          <span className="text-[1.125rem]/[100%] text-orange font-bold uppercase">
+            {formatCurrency(grandTotal)}
+          </span>
         </div>
       </div>
     </div>

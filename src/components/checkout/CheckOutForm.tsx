@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -18,13 +19,26 @@ import { getImageSrc } from "@/lib/productUtils";
 
 const formSchema = z
   .object({
-    name: z.string().min(2, "Name is required"),
-    email: z.string().email("Wrong format"),
-    phone: z.string().min(10, "Invalid phone number"),
-    address: z.string().min(2, "Address is required"),
-    zip: z.string().min(3, "Invalid ZIP"),
-    city: z.string().min(2, "City is required"),
-    country: z.string().min(2, "Country is required"),
+    name: z.string().min(2, "Name is required").max(100, "Name is too long"),
+    email: z.string().email("Wrong format").max(255, "Email is too long"),
+    phone: z
+      .string()
+      .min(10, "Invalid phone number")
+      .max(20, "Phone number is too long")
+      .regex(/^[\d\s\-\+\(\)]+$/, "Invalid phone number format"),
+    address: z
+      .string()
+      .min(2, "Address is required")
+      .max(200, "Address is too long"),
+    zip: z.string().min(3, "Invalid ZIP").max(10, "ZIP code is too long"),
+    city: z
+      .string()
+      .min(2, "City is required")
+      .max(100, "City name is too long"),
+    country: z
+      .string()
+      .min(2, "Country is required")
+      .max(100, "Country name is too long"),
     paymentMethod: z.enum(["eMoney", "cash"]),
     eMoneyNumber: z.string().optional(),
     eMoneyPin: z.string().optional(),
@@ -35,8 +49,12 @@ const formSchema = z
         return (
           data.eMoneyNumber &&
           data.eMoneyNumber.length >= 9 &&
+          data.eMoneyNumber.length <= 9 &&
+          /^\d+$/.test(data.eMoneyNumber) &&
           data.eMoneyPin &&
-          data.eMoneyPin.length >= 4
+          data.eMoneyPin.length >= 4 &&
+          data.eMoneyPin.length <= 4 &&
+          /^\d+$/.test(data.eMoneyPin)
         );
       }
       return true;
@@ -45,11 +63,30 @@ const formSchema = z
       message: "e-Money number (9 digits) and PIN (4 digits) are required",
       path: ["eMoneyNumber"],
     }
+  )
+  .refine(
+    (data) => {
+      if (data.paymentMethod === "eMoney") {
+        return (
+          data.eMoneyPin &&
+          data.eMoneyPin.length >= 4 &&
+          data.eMoneyPin.length <= 4 &&
+          /^\d+$/.test(data.eMoneyPin)
+        );
+      }
+      return true;
+    },
+    {
+      message: "e-Money PIN must be exactly 4 digits",
+      path: ["eMoneyPin"],
+    }
   );
 
 type FormData = z.infer<typeof formSchema>;
 
 function CheckOutForm() {
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -71,8 +108,6 @@ function CheckOutForm() {
     name: "paymentMethod",
   });
 
-  console.log("Payment Method:", paymentMethod);
-
   const {
     handleSubmit,
     formState: { errors, isSubmitting },
@@ -81,18 +116,43 @@ function CheckOutForm() {
   const { items, getTotal, clearCart } = useCart();
 
   const onSubmit = async (data: FormData) => {
-    if (items.length === 0) {
-      alert(
-        "Your cart is empty. Please add items to your cart before checkout."
-      );
+    if (isSubmittingOrder) {
       return;
     }
+
+    if (items.length === 0) {
+      form.setError("root", {
+        type: "manual",
+        message:
+          "Your cart is empty. Please add items to your cart before checkout.",
+      });
+      return;
+    }
+
+    if (items.some((item) => item.quantity <= 0)) {
+      form.setError("root", {
+        type: "manual",
+        message: "Invalid quantities detected. Please update your cart.",
+      });
+      return;
+    }
+
+    setIsSubmittingOrder(true);
+    form.clearErrors("root");
 
     try {
       const subtotal = getTotal();
       const shipping = 50;
       const vat = Math.round(subtotal * 0.2);
       const grandTotal = subtotal + shipping;
+
+      if (subtotal <= 0) {
+        form.setError("root", {
+          type: "manual",
+          message: "Invalid order total. Please check your cart.",
+        });
+        return;
+      }
 
       const cartItems = items.map((item) => {
         const imageSrc = getImageSrc(item.product.image.mobile);
@@ -136,20 +196,33 @@ function CheckOutForm() {
       window.location.href = `/checkout/confirmation?orderId=${result.orderId}`;
     } catch (error) {
       console.error("Checkout error:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Failed to submit order. Please try again."
-      );
+      form.setError("root", {
+        type: "manual",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to submit order. Please try again.",
+      });
+      setIsSubmittingOrder(false);
     }
   };
 
   return (
     <div className="">
+      {errors.root && (
+        <div
+          role="alert"
+          className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+        >
+          {errors.root.message}
+        </div>
+      )}
       <form
         id="form-checkout"
         onSubmit={handleSubmit(onSubmit)}
         className="space-y-10 w-full mx-auto"
+        noValidate
+        data-submitting={isSubmittingOrder}
       >
         <FieldGroup>
           {/* Billing Details */}

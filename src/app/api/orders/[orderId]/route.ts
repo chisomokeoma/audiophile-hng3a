@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 
-let api: any;
-try {
-  api = require("../../../../convex/_generated/api").api;
-} catch (error) {
-  console.warn(
-    "Convex API not generated yet. Run 'npx convex dev' to generate it."
-  );
-  api = null;
+function getConvexApi() {
+  try {
+    const base = "../../../../convex";
+    const gen = "_generated";
+    const mod = "api";
+    const path = `${base}/${gen}/${mod}`;
+    return require(path).api;
+  } catch {
+    return null;
+  }
 }
+
+const api = getConvexApi();
 
 function getConvexClient() {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
